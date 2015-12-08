@@ -18,14 +18,6 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-echo -e "${BLUE}|====================================|
-|                                    |
-|     ${YELLOW}This will install iptables${BLUE}     |
-|                                    |
-|====================================|${NORMAL}"
-  read -n 1 -p "Press any key to start...${NORMAL}"
-  echo ""
-  echo ""
 
 ###################
 #### VARIABLES ####
@@ -42,7 +34,7 @@ VPN_IF=''
 # Public address of the server - Leave empty if you don't know what you're doing
 SERVER_IP=''
 # DNS SERVER - List of DNS servers to reach - DNS in resolv.conf will be automatically added 
-DNS_SERVER='resolver1.opendns.com'
+DNS_SERVER=''
 SPOOF_IP='0.0.0.0/8 10.0.0.0/8 169.254.0.0/16 127.0.0.0/8 168.254.0.0/16 172.16.0.0/12 224.0.0.0/3 255.255.255.255/32'
 # Allow connections to package servers - Leave empty if you don't know what you're doing
 PACKAGE_SERVER=''
@@ -86,7 +78,7 @@ if [ -z "${PACKAGE_SERVER}" ]; then PACKAGE_SERVER="$(cat /etc/apt/sources.list 
 ################################################
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
 apt-get -qq update
-apt-get install -qqy iptables-dev libtext-csv-xs-perl build-essential pkg-config automake wget xz-utils unzip zip dnsutils
+apt-get install -qqy iptables-dev libtext-csv-xs-perl build-essential pkg-config automake wget xz-utils unzip zip dnsutils > /dev/null
 
 
 ################################

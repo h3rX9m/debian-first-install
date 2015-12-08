@@ -5,6 +5,12 @@
 # Tested on a minimal Debian 7/8 64bits
 clear
 
+if [[ $EUID -ne 0 ]]; then
+  echo "${RED}This script must be run as root!" 1>&2
+  echo "${RED}Use ${GREEN}sudo $0${NORMAL}"
+  exit 1
+fi
+
 #### FORMATTING VARIABLES ####
 NORMAL=$(tput sgr0)
 RED=$(tput setaf 1)
@@ -16,7 +22,7 @@ DIR=$(pwd)
 
 #### INSTALLING ####
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
-apt-get -qq update; apt-get -qqy dist-upgrade > /dev/null
+apt-get -qq update; apt-get install -qqy apt-transport-https apt-utils; apt-get -qqy dist-upgrade > /dev/null
 cp /etc/apt/sources.list{,.sav`date +%d-%m-%y_%T`}
 [ -z ${DEB} ] && { DEBIAN_VERSION=$(cat /etc/debian_version | cut -d. -f1); if [ ${DEBIAN_VERSION} == 8 ]; then DEB=jessie; elif [ ${DEBIAN_VERSION} == 7 ]; then DEB=wheezy; else DEB=stable; fi; }
 echo "# Official repository
