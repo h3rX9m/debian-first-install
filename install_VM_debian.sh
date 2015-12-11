@@ -24,7 +24,7 @@ PUB_IF="venet0"
 
 #### INSTALLING ####
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
-apt-get -qq update; apt-get install -qqy apt-transport-https apt-utils; apt-get -qqy dist-upgrade > /dev/null
+apt-get -qq update; apt-get install -qqy apt-utils apt-transport-https whiptail > /dev/null ; apt-get -qqy dist-upgrade > /dev/null
 cp /etc/apt/sources.list{,.sav`date +%d-%m-%y_%T`}
 [ -z ${DEB} ] && { DEBIAN_VERSION=$(cat /etc/debian_version | cut -d. -f1); if [ ${DEBIAN_VERSION} == 8 ]; then DEB=jessie; elif [ ${DEBIAN_VERSION} == 7 ]; then DEB=wheezy; else DEB=stable; fi; }
 echo "# Official repository
@@ -44,7 +44,7 @@ deb http://ftp.fr.debian.org/debian/ ${DEB}-backports main contrib
 " > /etc/apt/sources.list
 apt-get update -qq
 apt-get upgrade -qqy
-apt-get install -qqy whiptail man-db dnsutils git locales locate most openssl selinux-basics selinux-utils sudo vim cron wget unzip zip apt-utils > /dev/null
+apt-get install -qqy man-db dnsutils git locales locate most openssl selinux-basics selinux-utils sudo vim cron wget unzip zip apt-utils > /dev/null
 apt-get autoremove -qqy
 updatedb
 echo "${GREEN}config daily updates${NORMAL}"
