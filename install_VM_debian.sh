@@ -19,6 +19,8 @@ YELLOW=$(tput setaf 3)
 BLUE=$(tput setaf 4)
 WHITE=$(tput setaf 7)
 DIR=$(pwd)
+SERVER_IP=$(ip a | grep 'scope global' | cut -d' ' -f6 | cut -d'/' -f1)
+PUB_IF="venet0"
 
 #### INSTALLING ####
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
