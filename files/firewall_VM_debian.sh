@@ -269,15 +269,15 @@ echo "${GREEN}Allow outgoing smtp connections${RED}"
 ${IPT} -t filter -A OUTPUT -o ${PUB_IF} -p tcp -s ${SERVER_IP} -m multiport --dports 25,587 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
 ${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --sports 25,587 -m conntrack --ctstate ESTABLISHED     -j ACCEPT
 
-while [ "${WEB}" != "y" -a "${WEB}" != "Y" -a "${WEB}" != "n" -a "${WEB}" != "N" ]; do read -p "${YELLOW}Do you want to access a web server  - incoming tcp to port 80,443 (y/N)?${NORMAL} " WEB; done
-if [ "${WEB}" == "y" -o "${WEB}" == "Y" ]; then
+# while [ "${WEB}" != "y" -a "${WEB}" != "Y" -a "${WEB}" != "n" -a "${WEB}" != "N" ]; do read -p "${YELLOW}Do you want to access a web server  - incoming tcp to port 80,443 (y/N)?${NORMAL} " WEB; done
+# if [ "${WEB}" == "y" -o "${WEB}" == "Y" ]; then
 
-echo "${GREEN}Allow new and established incoming connections to web ports (80, 443)${RED}"
-${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --dports 80,443 -m conntrack --ctstate NEW -m recent --set --name WEB
-${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --dports 80,443 -m conntrack --ctstate NEW -m recent --update --seconds 1 --hitcount 20 --rttl --name WEB -j DROP
-${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -m multiport --dports 80,443 -m limit --limit 50/s --limit-burst 50 -j ACCEPT
-${IPT} -t filter -A OUTPUT -o ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --sports 80,443 -m conntrack --ctstate ESTABLISHED -j ACCEPT
-fi
+# echo "${GREEN}Allow new and established incoming connections to web ports (80, 443)${RED}"
+# ${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --dports 80,443 -m conntrack --ctstate NEW -m recent --set --name WEB
+# ${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --dports 80,443 -m conntrack --ctstate NEW -m recent --update --seconds 1 --hitcount 20 --rttl --name WEB -j DROP
+# ${IPT} -t filter -A INPUT  -i ${PUB_IF} -p tcp -m multiport --dports 80,443 -m limit --limit 50/s --limit-burst 50 -j ACCEPT
+# ${IPT} -t filter -A OUTPUT -o ${PUB_IF} -p tcp -d ${SERVER_IP} -m multiport --sports 80,443 -m conntrack --ctstate ESTABLISHED -j ACCEPT
+# fi
 
 
 ##################################
