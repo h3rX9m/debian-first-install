@@ -53,7 +53,7 @@ LOADER() {
 }
 
 if [ -z "${MONITORING}" ]; then read -p "${YELLOW}Enter the mail adresse to receive monitoring alert (Default: root@localhost): ${WHITE}" MONITORING; fi
-# if [ -z "${NEW_USERS}" ]; then echo "${GREEN}Add some users to the machine - Leave empty if there is no new user"; read -p "${YELLOW}Enter new user(s): ${WHITE}" NEW_USERS; fi
+if [ -z "${NEW_USERS}" ]; then echo "${GREEN}Add some users to the machine - Leave empty if there is no new user"; read -p "${YELLOW}Enter new user(s): ${WHITE}" NEW_USERS; fi
 if [ -z "${MONITORING}" ]; then MONITORING="root@localhost"; fi
 if [ -z "${SSH_USERS}" ]; then echo -n "${RED}"; echo '/!\ BE CAREFUL - you NEED at least one user to connect with ssh on a distant machine. Leaving empty will block ssh' ; read -p "${YELLOW}Enter user(s) who can connect with ssh: ${WHITE}" SSH_USERS; fi
 if [ -z "${SUDO_USERS}" ]; then read -p "${YELLOW}Enter the users who can connect with administrative rights (sudo) - ${RED}ALL ${YELLOW}rights granted: ${WHITE}" SUDO_USERS; fi
@@ -62,26 +62,47 @@ VALID_IF="$(ip a | grep '^[0-9]:' | grep -v 'lo' | awk '{ print $2 }' | sed 's/:
 if [ -z "${PUB_IF}" -a "$(ip a | grep ": <" | grep -v "lo" | cut -d: -f2 | wc -l)" != "1" ]; then while [ -z $i ]; do read -p "${YELLOW}Enter the interface to use as public interface - the one to connect to internet - ( ${VALID_IF}): ${WHITE}" PUB_IF; [ ! -z ${PUB_IF} ] && { for if in ${VALID_IF}; do [ "${if}" = ${PUB_IF} ] && { i=1; break; }; done; } done; else PUB_IF="${VALID_IF}"; fi
 # Working directory
 DIR=`pwd`
-# Install OpenVZ
-while [ "${OPENVZ}" != "y" -a "${OPENVZ}" != "Y" -a "${OPENVZ}" != "n" -a "${OPENVZ}" != "N" ]; do read -p "${YELLOW}Do you want to install openvz (y/N)?${NORMAL} " OPENVZ; done
-[ "${OPENVZ}" == "y" -o "${OPENVZ}" == "Y" ] && { DEB='wheezy'; }
+# Firewall?
 while [ "${FIREWALL}" != "y" -a "${FIREWALL}" != "Y" -a "${FIREWALL}" != "n" -a "${FIREWALL}" != "N" ]; do read -p "${YELLOW}Do you want to install a firewall (y/N)?${NORMAL} " FIREWALL; done
+# SSH variable
+function sshport () { 
+  unset RESULT; 
+  for i in $(cat /etc/services | grep -v "^#" | awk '{print $2}' | cut -d/ -f1| sort -n | uniq | tr '\n' ' '); do   
+    if [ "${SSH_PORT}" == "$i" ]; then RESULT="${SSH_PORT}"; fi; 
+  done; 
+}
+
+RESULT=1;
+[ -z "$(echo ${SSH_PORT} | grep "^[ [:digit:] ]*$")" ] && { while [ -z "$(echo $SSH_PORT | grep "^[ [:digit:] ]*$")" ]; do read -p "${YELLOW}Enter the new ssh port (Default: 22): ${WHITE}" SSH_PORT; done; sshport; }
+while [ ! -z "${RESULT}" -a "${SSH_PORT}" != 22 ]; do
+  unset SSH_PORT
+  while [ -z "$(echo ${SSH_PORT} | grep "^[ [:digit:] ]*$")" ]; do
+    read -p "${RED}Port ${SSH_PORT} is not a usable port. Please enter a new one: ${NORMAL}" SSH_PORT; 
+  done
+  sshport
+done
+
+
+
+
 
 ##################
 #### PACKAGES ####
 ##################
 LOADER; echo "${GREEN}Updating...             ${NORMAL}"
+# update
 apt-get -qq update > /dev/null 2>&1
 LOADER; echo "${GREEN}Installing etckeeper and rkhunter, this might take a while${NORMAL}"
-apt-get install -qqy rkhunter libwww-perl etckeeper  > /dev/null
-cd /etc
-git config --global user.name "${USER}"
-git config --global user.email ${USER}@$(hostname -f)
-git commit --amend --reset-author -m "Initial commit" > /dev/null
+# first packages to install
+apt-get install -qqy rkhunter libwww-perl > /dev/null
 LOADER; echo "${GREEN}Updating and Upgrading system with new sources.list, this might take a while${NORMAL}"
+# backup sources.list file
 cp /etc/apt/sources.list{,.sav`date +%d-%m-%y_%T`}
+# wheezy or jessie?
 [ -z ${DEB} ] && { DEBIAN_VERSION=$(cat /etc/debian_version | cut -d. -f1); if [ ${DEBIAN_VERSION} == 8 ]; then DEB=jessie; elif [ ${DEBIAN_VERSION} == 7 ]; then DEB=wheezy; else DEB=stable; fi; }
+# proxmox VE?
 [ -f /etc/apt/sources.list.d/pve-enterprise.list ] && { echo "deb http://download.proxmox.com/debian ${DEB} pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list; rm /etc/apt/sources.list.d/pve-enterprise.list; }
+# New sources.list
 echo "# Official repository
 deb http://ftp.fr.debian.org/debian ${DEB} main contrib non-free
 deb-src http://ftp.fr.debian.org/debian ${DEB} main contrib non-free
@@ -99,28 +120,46 @@ deb http://ftp.fr.debian.org/debian/ ${DEB}-backports main contrib
 " > /etc/apt/sources.list
 apt-get update -qq
 apt-get upgrade -qqy
+# new packages > See "CONFIG"
 LOADER; echo "${GREEN}Installing packages, this might take a while${NORMAL}"
-apt-get -qqy install auditd debsums dnsutils colordiff git htop libpam-cracklib locales locate most openssl selinux-basics selinux-utils sudo subversion vim > /dev/null
-apt-get install -qqy portsentry 
+apt-get -qqy install auditd colordiff debsums dnsutils git htop libpam-cracklib locales locate logwatch most openssl selinux-basics selinux-utils subversion sudo vim > /dev/null
+apt-get install -qqy portsentry
 apt-get autoremove -qqy
 updatedb
+
+
+
+
 
 ####################
 #### USERS CONF ####
 ####################
+# Add new users
 LOADER; echo "${GREEN}Adding new users if needed${NORMAL}"
 for user in $(echo ${NEW_USERS} ${SSH_USERS} ${SUDO_USERS} | tr ' ' '\n' | sort | uniq | tr '\n' ' '); do
   getent passwd $user > /dev/null || { useradd -m -s /bin/bash $user; }
 done
+# New passwords (SHA512)
 LOADER; echo "${GREEN}Modifying password for all users for better security${NORMAL}"
 for user in $(cat /etc/passwd | grep /bin/bash | cut -d: -f1 | tr '\n' ' '); do
   unset PASSWD
   while [ -z "$PASSWD" ]; do read -p "${YELLOW}  - Wich password use for ${user} : ${WHITE}" PASSWD; done
 	chpasswd -c SHA512 -s 200000 <<<"${user}:${PASSWD}"
 done
+# Config sudo users
 for user in $(echo ${SUDO_USERS} | tr ' ' '\n' | sort | uniq | tr '\n' ' '); do
   echo "${user}    ALL=(ALL) ALL" >> /etc/sudoers
 done
+# Config .bashrc - autocompletion
+sed -i "s/PUB_IF/${PUB_IF}/g" ${DIR}/files/.bashrc
+sed -i "s/SERVER_IP/${SERVER_IP}/g" ${DIR}/files/.bashrc
+cp -f ${DIR}/files/.bashrc /root/
+cp -f ${DIR}/files/.bashrc /etc/skel/
+for user in $(cat /etc/passwd | grep /bin/bash | cut -d: -f1 | grep -v "root" | tr '\n' ' '); do
+  cp -f ${DIR}/files/.bashrc /home/$user/.bashrc
+  chown $user:$user /home/$user/.bashrc
+done
+# autocompletion for .bashrc
 cat <<\EOF > /etc/bash_completion.d/iptdelhttp
 _iptdelhttp() {
   list=''
@@ -151,23 +190,37 @@ _iptdelpack() {
 complete -F _iptdelpack iptdelpack
 EOF
 source /etc/bash_completion.d/iptdelpack
-sed -i "s/PUB_IF/${PUB_IF}/g" ${DIR}/files/.bashrc
-sed -i "s/SERVER_IP/${SERVER_IP}/g" ${DIR}/files/.bashrc
-cp -f ${DIR}/files/.bashrc /root/
-cp -f ${DIR}/files/.bashrc /etc/skel/
-for user in $(cat /etc/passwd | grep /bin/bash | cut -d: -f1 | grep -v "root" | tr '\n' ' '); do
-  cp -f ${DIR}/files/.bashrc /home/$user/.bashrc
-  chown $user:$user /home/$user/.bashrc
-done
 source ~/.bashrc
 
-##############
-#### CONF ####
-##############
+
+
+
+
+################
+#### CONFIG ####
+################
 #### Most ####
 LOADER; echo "${GREEN}Configure most and vim      ${NORMAL}"
 update-alternatives --config pager > /dev/null << EOF
 3
+EOF
+#### logwatch ####
+cp /usr/share/logwatch/default.conf/logwatch.conf /etc/logwatch/conf/logwatch.conf
+mkdir /var/cache/logwatch/
+sed -i 's/Output = stdout/Output = file/g' /etc/logwatch/conf/logwatch.conf
+sed -i "s/MailFrom = Logwatch/MailFrom = Logwatch_VM_$(ip a s venet0 | grep '192.168.0.' | cut -d' ' -f 8 | cut -d'.' -f4)/g" /etc/logwatch/conf/logwatch.conf
+sed -i 's@#Filename = /tmp/logwatch@Filename = /var/log/logwatch@g' /etc/logwatch/conf/logwatch.conf
+sed -i 's@Range = yesterday@Range = yesterday@g' /etc/logwatch/conf/logwatch.conf
+sed -i 's/Detail = Low/Detail = 7/g' /etc/logwatch/conf/logwatch.conf
+cat << EOF > /etc/cron.daily/00logwatch
+#!/bin/bash
+#Check if removed-but-not-purged
+test -x /usr/share/logwatch/scripts/logwatch.pl || { echo "ERROR: /usr/share/logwatch/scripts/logwatch.pl not found or executable"}
+#execute
+/usr/sbin/logwatch
+/usr/sbin/logwatch --mailto ${MONITORING}
+#Note: It's possible to force the recipient in above command
+#Just pass --mailto address@a.com instead of --output mail
 EOF
 #### Vim setup ####
 sed -i "s@\"syntax on@syntax on@g" /etc/vim/vimrc
@@ -181,7 +234,10 @@ update-alternatives --config editor > /dev/null << EOF
 2
 EOF
 #### VM ####
-[ $(uname -r | grep pve) ] && { sed -i 's/IPTABLES=/IPTABLES="ipt_REJECT ipt_recent ipt_owner ipt_REDIRECT ipt_tos ipt_TOS ipt_LOG ip_conntrack ipt_limit ipt_multiport iptable_filter iptable_mangle ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_length ipt_state iptable_nat ip_nat_ftp" ##/' 
+[ $(uname -r | grep pve) ] && { sed -i 's/IPTABLES=/IPTABLES="ipt_REJECT ipt_recent ipt_owner ipt_REDIRECT ipt_tos ipt_TOS ipt_LOG ip_conntrack ipt_limit ipt_multiport iptable_filter iptable_mangle ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_length ipt_state iptable_nat ip_nat_ftp" ##/'; }
+
+
+
 
 
 #################
@@ -189,28 +245,13 @@ EOF
 #################
 LOADER; echo "${GREEN}Configuring ssh service          ${NORMAL}"
 ## SSH ##
-[ -f /tmp/list ] && rm /tmp/list
-until [ $([ -f /tmp/list ] && cat /tmp/list | sort | uniq | wc -l || echo 0) == 1 ]; do
-  [ -f /tmp/list ] && rm /tmp/list
-  read -p "${YELLOW}  - Enter the new ssh port (Default: 22): ${WHITE}" SSH_PORT
-  if [ -z ${SSH_PORT} ]; then SSH_PORT=22; [ -f /tmp/list ] && rm /tmp/list; break; fi
-  if [ ! -z ${SSH_PORT} -a "${SSH_PORT}" == "22" ]; then [ -f /tmp/list ] && rm /tmp/list; break; fi
-  for i in $(cat /etc/services | grep -v "^#" | awk '{print $2}' | cut -d/ -f1| sort -n | uniq | tr '\n' ' '); do
-    if [ ${SSH_PORT} == $i ]; then
-      echo "${RED}Port ${SSH_PORT} is already used. Please enter a new one${NORMAL}"
-      echo ko >> /tmp/list
-    else
-      echo ok >> /tmp/list
-    fi
-  done
-done
 LOADER; echo "${GREEN}  - Use port ${SSH_PORT}            ${NORMAL}"
 sed -i "s/Port 22/Port ${SSH_PORT}/g" /etc/ssh/sshd_config
 for user in $(echo ${SSH_USERS} | tr ' ' '\n' | sort | uniq | tr '\n' ' '); do
   mkdir -p /home/$user/.ssh
   while [ "${KEY}" != "y" -a "${KEY}" != "Y" -a "${KEY}" != "n" -a "${KEY}" != "N" ]; do read -p "${YELLOW}Do you already have a ssh key for $user (y/N): ${WHITE}" KEY; done
   if [ -z "$KEY" -o "$KEY" == "n" -o "$KEY" == "N" ]; then
-    echo "${RED}Please create a couple of key for $user.
+    echo "${RED}Please create a couple of key for $user on your client.
 On Linux, use 'ssh-keygen -t rsa -b 3072'.
 On windows, use puttygen software."
     sleep 2s
@@ -292,7 +333,6 @@ echo "none /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0" >> /etc/fstab
 source ~/.bashrc
 sleep 3s
 cd ${DIR}/files/
-[ "${OPENVZ}" == "y" -o "${OPENVZ}" == "Y" ] && { echo -e "\n${GREEN}Done! \n Press [ENTER] to continue and install OpenVZ, [CTRL +C] to leave"; chmod +x openvz.bash && ./openvz.bash; }
 [ "${FIREWALL}" == "y" -o "${FIREWALL}" == "Y" ] && { echo -e "\n${GREEN}Done! \n Press [ENTER] to continue and install a firewall, [CTRL +C] to leave"; read; chmod +x firewall.bash; ./firewall.bash ${SSH_PORT} ${PUB_IF}; }
 echo -e "\n${GREEN}Done!
 Press [ENTER] to continue and REBOOT"
