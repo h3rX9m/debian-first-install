@@ -139,7 +139,7 @@ if [ ! -d /opt/src/xtables-addons ]; then
   mkdir -p /opt/src && cd /opt/src
   base_url=http://sourceforge.net/projects/xtables-addons/files/Xtables-addons
   [[ "$(uname -r | cut -d. -f1-2 | tr '.' ',')" -ge "3,7" ]] && { wget -t 3 -T 30 -qO- $base_url/xtables-addons-2.10.tar.xz | tar xJv; } || { wget -t 3 -T 30 -qO- $base_url/xtables-addons-1.47.1.tar.xz | tar xJv; }
-  cp xtables-addons-* xtables-addons
+  cp -r xtables-addons-* xtables-addons
   cd xtables-addons
   ./configure && make && make install  
   depmod 
