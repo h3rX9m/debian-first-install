@@ -19,10 +19,11 @@ YELLOW=$(tput setaf 3)
 BLUE=$(tput setaf 4)
 WHITE=$(tput setaf 7)
 DIR=$(pwd)
+
 SERVER_IP=$(ip a | grep 'scope global' | cut -d' ' -f6 | cut -d'/' -f1)
 PUB_IF="venet0"
 
-#### INSTALLING ####
+#### SETUP ####
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
 apt-get -qq update; apt-get install -qqy apt-utils apt-transport-https whiptail > /dev/null ; apt-get -qqy dist-upgrade > /dev/null
 cp /etc/apt/sources.list{,.sav`date +%d-%m-%y_%T`}
@@ -44,9 +45,29 @@ deb http://ftp.fr.debian.org/debian/ ${DEB}-backports main contrib
 " > /etc/apt/sources.list
 apt-get update -qq
 apt-get upgrade -qqy
-apt-get install -qqy man-db dnsutils git locales locate most openssl selinux-basics selinux-utils sudo vim cron wget unzip zip apt-utils > /dev/null
+apt-get install -qqy apt-utils dnsutils git locales locate logwatch man-db most openssl selinux-basics selinux-utils sudo vim cron wget screen unzip zip > /dev/null
 apt-get autoremove -qqy
 updatedb
+#### CONFIG ####
+# logwatch
+cp /usr/share/logwatch/default.conf/logwatch.conf /etc/logwatch/conf/logwatch.conf
+mkdir /var/cache/logwatch/
+sed -i 's/Output = stdout/Output = file/g' /etc/logwatch/conf/logwatch.conf
+sed -i "s/MailFrom = Logwatch/MailFrom = Logwatch_VM_$(ip a s venet0 | grep '192.168.0.' | cut -d' ' -f 8 | cut -d'.' -f4)/g" /etc/logwatch/conf/logwatch.conf
+sed -i 's@#Filename = /tmp/logwatch@Filename = /var/log/logwatch@g' /etc/logwatch/conf/logwatch.conf
+sed -i 's@Range = yesterday@Range = yesterday@g' /etc/logwatch/conf/logwatch.conf
+sed -i 's/Detail = Low/Detail = 7/g' /etc/logwatch/conf/logwatch.conf
+cat << EOF > /etc/cron.daily/00logwatch
+#!/bin/bash
+#Check if removed-but-not-purged
+test -x /usr/share/logwatch/scripts/logwatch.pl || { echo "ERROR: /usr/share/logwatch/scripts/logwatch.pl not found"}
+#execute
+/usr/sbin/logwatch
+/usr/sbin/logwatch --mailto ${MONITORING_MAIL}
+#Note: It's possible to force the recipient in above command
+#Just pass --mailto address@a.com instead of --output mail
+EOF
+# daily updates
 echo "${GREEN}config daily updates${NORMAL}"
 echo '#!/bin/bash
 echo "UPDATE:";
@@ -56,10 +77,12 @@ apt-get -qy upgrade;
 echo "AUTOREMOVE:";
 apt-get -y autoremove' > /etc/cron.daily/upgrade_package
 chmod +x /etc/cron.daily/upgrade_package
+# pager
 echo "${GREEN}Config pager, editor, vim and most${NORMAL}"
 update-alternatives --config pager > /dev/null << EOF
 3
 EOF
+# editor/vim
 sed -i "s@\"syntax on@syntax on@g" /etc/vim/vimrc
 sed -i "s@\"set ignorecase@set ignorecase@g" /etc/vim/vimrc
 sed -i "s@\"set background=dark@set background=dark@g" /etc/vim/vimrc
@@ -69,6 +92,7 @@ set tabstop=4' >> /etc/vim/vimrc
 update-alternatives --config editor > /dev/null << EOF
 2
 EOF
+# security
 echo "${GREEN}Check for security issues${NORMAL}"
 [ -f /usr/bin/gcc ] && chmod 700 /usr/bin/gcc && chmod 700 /usr/bin/gcc-4*
 [ -f /usr/bin/make ] && chmod 700 /usr/bin/make
@@ -94,6 +118,7 @@ machine. Unauthorized users will be logged, monitored, and
 could be pursued.
 ------------------------------------------------------------" > /etc/issue.net
 echo "${GREEN}Else...${NORMAL}"
+# .bashrc 
 cat <<\EOF > /etc/bash_completion.d/iptdelhttp
 _iptdelhttp() {
   list=''
