@@ -104,23 +104,22 @@ DNS_SERVER="$(cat /etc/resolv.conf | grep -v 127.0 | grep nameserver | cut -d" "
 ## PACKAGE_SERVER
 if [ -z "${PACKAGE_SERVER}" ]; then PACKAGE_SERVER="$(cat /etc/apt/sources.list | grep -v "^#" | cut -d" " -f2 | cut -d"/" -f3 | sort | uniq | awk -v ORS=" " '{ print $1 }') $([ "$(ls -A /etc/apt/sources.list.d)" ] && cat /etc/apt/sources.list.d/* | grep -v "^#" | cut -d" " -f2 | cut -d"/" -f3 | sort | uniq | awk -v ORS=" " '{ print $1 }')"; fi
 # SSH PORT
-if [ -z "${SSH_PORT}" ]; then
-[ -f /tmp/list ] && rm -f /tmp/list
-until [ $([ -f /tmp/list ] && cat /tmp/list | sort | uniq | wc -l || echo 0) == 1 ]; do
-  [ -f /tmp/list ] && rm /tmp/list
-  read -p "${YELLOW}  - Enter the new ssh port (Default: 22): ${WHITE}" SSH_PORT
-  if [ -z ${SSH_PORT} ]; then SSH_PORT=22; [ -f /tmp/list ] && rm /tmp/list; break; fi
-  if [ ! -z ${SSH_PORT} -a "${SSH_PORT}" == "22" ]; then [ -f /tmp/list ] && rm /tmp/list; break; fi
-  for i in $(cat /etc/services | grep -v "^#" | awk '{print $2}' | cut -d/ -f1| sort -n | uniq | tr '\n' ' '); do
-    if [ ${SSH_PORT} == $i ]; then
-      echo "${RED}Port ${SSH_PORT} is already used. Please enter a new one${NORMAL}"
-      echo ko >> /tmp/list
-    else
-      echo ok >> /tmp/list
-    fi
+function sshport () { 
+  unset RESULT; 
+  for i in $(cat /etc/services | grep -v "^#" | awk '{print $2}' | cut -d/ -f1| sort -n | uniq | tr '\n' ' '); do   
+    if [ "${SSH_PORT}" == "$i" ]; then RESULT="${SSH_PORT}"; fi; 
+  done; 
+}
+
+RESULT=1;
+[ -z "$(echo ${SSH_PORT} | grep "^[ [:digit:] ]*$")" ] && { while [ -z "$(echo $SSH_PORT | grep "^[ [:digit:] ]*$")" ]; do read -p "${YELLOW}Enter the new ssh port (Default: 22): ${WHITE}" SSH_PORT; done; sshport; }
+while [ ! -z "${RESULT}" -a "${SSH_PORT}" != 22 ]; do
+  unset SSH_PORT
+  while [ -z "$(echo ${SSH_PORT} | grep "^[ [:digit:] ]*$")" ]; do
+    read -p "${RED}Port ${SSH_PORT} is not a usable port. Please enter a new one: ${NORMAL}" SSH_PORT; 
   done
+  sshport
 done
-fi
 
 
 
@@ -468,6 +467,7 @@ ${IPT} -t filter -A INPUT  -i ${PUB_IF} -j LOG -m limit --limit 5/min --log-leve
 ${IPT} -t filter -A INPUT  -i ${PUB_IF} -j DROP
 ${IPT} -t filter -A OUTPUT -o ${PUB_IF} -j LOG -m limit --limit 5/min --log-level 4 --log-prefix 'IP_OUTPUT_DROP '
 ${IPT} -t filter -A OUTPUT -o ${PUB_IF} -j DROP
+${IPT} -t filter -A FORWARD -o ${PUB_IF} -j DROP
 
 
 
