@@ -144,7 +144,7 @@ else
   function iptaddhttp() { [ -z "$*" ] && { echo "$(tput setaf 2)Usage: iptaddhttp server_1 server_2...$(tput sgr 0)"; } || { for name in $*; do sed -i "s@$(cat /etc/bash_completion.d/iptdelhttp | grep list= | sed 's/.$//g')@$(cat /etc/bash_completion.d/iptdelhttp | grep list= | sed "s/.$/$name/g") @" /etc/bash_completion.d/iptdelhttp; iptables -t filter -A SPECIFIC_WEBSITE -o PUB_IF -p tcp -s SERVER_IP -d $name -m multiport --dports 80,443 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -t filter -A SPECIFIC_WEBSITE -i PUB_IF -p tcp -s $name -d SERVER_IP -m multiport --sports 80,443 -m conntrack --ctstate ESTABLISHED -j ACCEPT; done; source /etc/bash_completion.d/iptdelhttp; }; }
   function iptdelhttp() { [ -z "$*" ] && { echo "$(tput setaf 2)Usage: iptdelhttp server_1 server_2...$(tput sgr 0)"; } || { for name in $*; do sed -i "s/$name //" /etc/bash_completion.d/iptdelhttp; iptables -t filter -D SPECIFIC_WEBSITE -o PUB_IF -p tcp -s SERVER_IP -d $name -m multiport --dports 80,443 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT; iptables -t filter -D SPECIFIC_WEBSITE -i PUB_IF -p tcp -s $name -d SERVER_IP -m multiport --sports 80,443 -m conntrack --ctstate ESTABLISHED -j ACCEPT; done; source /etc/bash_completion.d/iptdelhttp; }; }
 fi
-git () { iptaddhttp github.com; /usr/bin/git "$1 $2"; iptdelhttp github.com; }
+git () { iptaddhttp github.com; /usr/bin/git $1 $2; iptdelhttp github.com; }
 
 # Alias definitions.
 # You may want to put all your additions into a separate file like
