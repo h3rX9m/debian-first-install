@@ -92,7 +92,7 @@ done
 LOADER; echo "${GREEN}Updating...             ${NORMAL}"
 # update
 apt-get -qq update > /dev/null 2>&1
-LOADER; echo "${GREEN}Installing etckeeper and rkhunter, this might take a while${NORMAL}"
+LOADER; echo "${GREEN}Installing rkhunter, this might take a while${NORMAL}"
 # first packages to install
 apt-get install -qqy rkhunter libwww-perl > /dev/null
 LOADER; echo "${GREEN}Updating and Upgrading system with new sources.list, this might take a while${NORMAL}"
@@ -119,7 +119,7 @@ deb-src http://security.debian.org/ ${DEB}/updates main contrib non-free
 deb http://ftp.fr.debian.org/debian/ ${DEB}-backports main contrib
 " > /etc/apt/sources.list
 apt-get update -qq
-apt-get upgrade -qqy
+apt-get upgrade -qqy > /dev/null
 # new packages > See "CONFIG"
 LOADER; echo "${GREEN}Installing packages, this might take a while${NORMAL}"
 apt-get -qqy install auditd colordiff debsums dnsutils git htop libpam-cracklib locales locate logwatch most openssl selinux-basics selinux-utils subversion sudo vim > /dev/null
@@ -330,7 +330,15 @@ machine. Unauthorized users will be logged, monitored, and
 could be pursued.
 ------------------------------------------------------------" > /etc/issue.net
 echo "none /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0" >> /etc/fstab
-source ~/.bashrc
+# Else
+[ -f /etc/apt/sources.list.d/pve-enterprise.list ] && { cp /usr/share/pve-manager/ext4/pvemanagerlib.js /usr/share/pve-manager/ext4/pvemanagerlib.js.sav; sed "s@data.status !== 'Active'@false@" /usr/share/pve-manager/ext4/pvemanagerlib.js; echo 'auto vmbr1
+iface vmbr1 inet static
+        address  192.168.0.1
+        netmask  255.255.255.0
+        bridge_ports none
+        bridge_stp off
+        bridge_fd 0
+' >> /etc/network/interfaces; }
 sleep 3s
 cd ${DIR}/files/
 [ "${FIREWALL}" == "y" -o "${FIREWALL}" == "Y" ] && { echo -e "\n${GREEN}Done! \n Press [ENTER] to continue and install a firewall, [CTRL +C] to leave"; read; chmod +x firewall.bash; ./firewall.bash ${SSH_PORT} ${PUB_IF}; }
