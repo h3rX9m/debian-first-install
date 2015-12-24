@@ -200,7 +200,7 @@ source ~/.bashrc
 #### CONFIG ####
 ################
 #### Most ####
-LOADER; echo "${GREEN}Configure most and vim      ${NORMAL}"
+LOADER; echo "${GREEN}Configure most, vim, logwatch, crontab      ${NORMAL}"
 update-alternatives --config pager > /dev/null << EOF
 3
 EOF
@@ -215,7 +215,7 @@ sed -i 's/Detail = Low/Detail = 7/g' /etc/logwatch/conf/logwatch.conf
 cat << EOF > /etc/cron.daily/00logwatch
 #!/bin/bash
 #Check if removed-but-not-purged
-test -x /usr/share/logwatch/scripts/logwatch.pl || { echo "ERROR: /usr/share/logwatch/scripts/logwatch.pl not found or executable"}
+test -x /usr/share/logwatch/scripts/logwatch.pl || { echo "ERROR: /usr/share/logwatch/scripts/logwatch.pl not found or executable"; }
 #execute
 /usr/sbin/logwatch
 /usr/sbin/logwatch --mailto ${MONITORING}
@@ -234,7 +234,7 @@ update-alternatives --config editor > /dev/null << EOF
 2
 EOF
 #### VM ####
-[ $(uname -r | grep pve) ] && { sed -i 's/IPTABLES=/IPTABLES="ipt_REJECT ipt_recent ipt_owner ipt_REDIRECT ipt_tos ipt_TOS ipt_LOG ip_conntrack ipt_limit ipt_multiport iptable_filter iptable_mangle ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_length ipt_state iptable_nat ip_nat_ftp" ##/'; }
+[ $(uname -r | grep pve) ] && { sed -i 's/^IPTABLES=/OLDIPTABLES=/' /etc/vz/vz.conf; sed -i '/^OLDIPTABLES/i\IPTABLES="iptable_filter iptable_mangle ipt_limit ipt_multiport ipt_tos ipt_TOS ipt_REJECT ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_LOG ipt_length ip_conntrack ip_conntrack_ftp ip_conntrack_irc ipt_conntrack ipt_state ipt_helper iptable_nat ip_nat_ftp ip_nat_irc ipt_REDIRECT xt_mac ipt_owner"' /etc/vz/vz.conf; sed -i '/^OLDIPTABLES=/d' /etc/vz/vz.conf; }
 
 
 
