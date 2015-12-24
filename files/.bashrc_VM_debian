@@ -133,6 +133,7 @@ else
   alias mv='mv -i'
   alias reboot='reboot; exit'
   alias upgrade='apt-get -qq update; apt-get -qqy upgrade; apt-get -qqy autoclean'
+  alias error='echo -e "RESSOURCES:\n"; cat /proc/user_beancounters; echo -e "\n\nDISK:\n"; df -hi; df -h'
   alias build='./configure && make && make install'
   alias localip="ifconfig | grep cast | cut -d':' -f2 | cut -d' ' -f1"
   alias ipt='/sbin/iptables'
