@@ -225,15 +225,6 @@ ${IPT} -t filter -A BAD_TCP -i ${PUB_IF} -p tcp --tcp-flags SYN,FIN SYN,FIN     
 ${IPT} -t filter -I INPUT  2 -i ${PUB_IF} -p tcp -j BAD_TCP
 ${IPT} -t filter -I OUTPUT 2 -o ${PUB_IF} -p tcp -j BAD_TCP
 
-
-echo "${GREEN}Drop countries that shouldn't access the server${RED}"
-${IPT} -N GEOIP
-for IP in ${BLOCKED_COUNTRIES}; do
-${IPT} -t filter -A GEOIP -m geoip --src-cc ${IP} -j DROP
-done
-${IPT} -t filter -I INPUT 6 -i ${PUB_IF} -p tcp -j GEOIP
-
-
 echo "${GREEN}Prevent SYN Flood Attack    ${RED}"
 ${IPT} -t filter -I INPUT 7 -i ${PUB_IF} -p tcp  -d ${SERVER_IP} -m state --state NEW -m tcp --syn -m recent --name synflood --set
 ${IPT} -t filter -I INPUT 8 -i ${PUB_IF} -p tcp  -d ${SERVER_IP} -m state --state NEW -m tcp --syn -m recent --name synflood --update --seconds 1 --hitcount 10 -j DROP
@@ -243,7 +234,7 @@ ${IPT} -t filter -I INPUT 8 -i ${PUB_IF} -p tcp  -d ${SERVER_IP} -m state --stat
 
 
 ################################################
-## GLOBAL IPTABLES RULES. PUT HERE YOUR RULES ##
+## GLOBAL IPTABLES RULES. PUT YOUR RULES HERE ##
 ################################################
 
 echo "${GREEN}Log and Allow SSH on port ${SSH_PORT}${RED}"

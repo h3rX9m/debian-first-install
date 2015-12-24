@@ -124,7 +124,7 @@ done
 
 
 ################################################
-#### INSTALLING IPTABLES ANS XTABLES-ADDONS ####
+#### INSTALLING IPTABLES AND XTABLES-ADDONS ####
 ################################################
 sleep 1
 echo "${GREEN}Installing packages, this might take a while${NORMAL}"
@@ -285,7 +285,6 @@ for IP in ${SPOOF_IP}; do
  ${IPT} -t filter -A SPOOF_IP -i ${PUB_IF} -s ${IP} -j DROP
 done
 ${IPT} -t filter -I INPUT   -i ${PUB_IF} -p tcp -d ${SERVER_IP} -j SPOOF_IP
-${IPT} -t filter -I FORWARD -i ${PUB_IF} -p tcp -j SPOOF_IP
 ${IPT} -t filter -I OUTPUT  -o ${PUB_IF} -p tcp -s ${SERVER_IP} -j SPOOF_IP
 
 LOADER
@@ -357,6 +356,7 @@ for IP in ${BLOCKED_COUNTRIES}; do
 ${IPT} -t filter -A GEOIP -m geoip --src-cc ${IP} -j DROP
 done
 ${IPT} -t filter -I INPUT 6 -i ${PUB_IF} -p tcp -j GEOIP
+${IPT} -t filter -I FORWARD -i ${PUB_IF} -p tcp -j GEOIP
 
 LOADER
 echo "${GREEN}Prevent SYN Flood Attack    ${RED}"
@@ -437,23 +437,23 @@ ${IPT} -I INPUT -m psd --psd-weight-threshold 15 --psd-hi-ports-weight 3 -j DROP
 ###############
 ## NAT RULES ##
 ###############
-# if [ "$(sysctl net.ipv4.ip_forward | awk '{print $3}')" != "1" -o -z "$(cat /etc/sysctl.conf | grep "net.ipv4.ip_forward =")" ]; then
-  # echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
-# else
-  # sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf
-# fi
-# sysctl -qp /etc/sysctl.conf
+if [ "$(sysctl net.ipv4.ip_forward | awk '{print $3}')" != "1" -o -z "$(cat /etc/sysctl.conf | grep "net.ipv4.ip_forward =")" ]; then
+  echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+else
+  sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf
+fi
+sysctl -qp /etc/sysctl.conf
 
 #### INTER VM - OK ####
 # ${IPT} -A FORWARD -s 192.168.0.0/16 -d 192.168.0.0/16 -j ACCEPT
 # Redirection port HOST->VM
-# ${IPT} -t nat -A PREROUTING -i ${PUB_IF} -p tcp -m tcp --sport 1024:65535 --dport 80 -j DNAT --to-destination 192.168.0.100:80
-# ${IPT} -A FORWARD -i ${PUB_IF} -p tcp -d 192.168.0.100 --dport 80 -j ACCEPT
+# ${IPT} -t nat -A PREROUTING -i ${PUB_IF} -p tcp -m tcp --sport 1024:65535 --dport 80 -j DNAT --to-destination 192.168.0.101:80
+# ${IPT} -A FORWARD -i ${PUB_IF} -p tcp -d 192.168.0.101 --dport 80 -j ACCEPT
 #### NAT EXTERNE - OK ####
 # ${IPT} -t nat -I POSTROUTING -o ${PUB_IF} -s 192.168.0.0/16 ! -d 192.168.0.0/16 -j MASQUERADE
 # A ADAPTER!!!!
-# ${IPT} -A FORWARD -i ${PUB_IF} -d 192.168.0.0/16 -j ACCEPT
-# ${IPT} -A FORWARD -o ${PUB_IF} -s 192.168.0.0/16 -j ACCEPT
+# ${IPT} -I FORWARD 2 -i ${PUB_IF} -d 192.168.0.0/16 -j ACCEPT
+# ${IPT} -I FORWARD 2 -o ${PUB_IF} -s 192.168.0.0/16 -j ACCEPT
 
 
 
