@@ -125,7 +125,7 @@ if [ $UID -ne 0 ]; then
   alias localip="sudo ifconfig | grep cast | cut -d':' -f2 | cut -d' ' -f1"
   alias ipt='sudo /sbin/iptables'
   alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers'
-  alias iptnat='sudo /sbin/iptables -t nat -L -n -v --line-numbers'
+  alias iptnat='sudo /sbin/iptables -t nat -L -n -v --line-numbers; sudo /sbin/iptables -L FORWARD -n -v --line-numbers'
   alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers'
   alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers'
   alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers'
@@ -142,7 +142,7 @@ else
   alias localip="ifconfig | grep cast | cut -d':' -f2 | cut -d' ' -f1"
   alias ipt='/sbin/iptables'
   alias iptlist='/sbin/iptables -L -n -v --line-numbers'
-  alias iptnat='/sbin/iptables -t nat -L -n -v --line-numbers'
+  alias iptnat='/sbin/iptables -t nat -L -n -v --line-numbers; /sbin/iptables -L FORWARD -n -v --line-numbers'
   alias iptlistin='/sbin/iptables -L INPUT -n -v --line-numbers'
   alias iptlistout='/sbin/iptables -L OUTPUT -n -v --line-numbers'
   alias iptlistfw='/sbin/iptables -L FORWARD -n -v --line-numbers'
