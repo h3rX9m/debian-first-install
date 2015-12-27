@@ -447,8 +447,8 @@ sysctl -qp /etc/sysctl.conf
 #### INTER VM - OK ####
 # ${IPT} -A FORWARD -s 192.168.0.0/16 -d 192.168.0.0/16 -j ACCEPT
 # Redirection port HOST->VM
-# ${IPT} -t nat -A PREROUTING -i ${PUB_IF} -p tcp -m tcp --sport 1024:65535 --dport 80 -j DNAT --to-destination 192.168.0.101:80
-# ${IPT} -A FORWARD -i ${PUB_IF} -p tcp -d 192.168.0.101 --dport 80 -j ACCEPT
+# ${IPT} -t nat -I PREROUTING -i ${PUB_IF} -p tcp -m tcp --sport 1024:65535 --dport 80 -j DNAT --to-destination 192.168.0.101:80
+# ${IPT} -I FORWARD -i ${PUB_IF} -p tcp -d 192.168.0.101 --dport 80 -j ACCEPT
 #### NAT EXTERNE - OK ####
 # ${IPT} -t nat -I POSTROUTING -o ${PUB_IF} -s 192.168.0.0/16 ! -d 192.168.0.0/16 -j MASQUERADE
 # A ADAPTER!!!!
