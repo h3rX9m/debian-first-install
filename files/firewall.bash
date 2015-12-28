@@ -419,16 +419,6 @@ if [ "${PROXMOX}" == "y" -o "${PROXMOX}" == "Y" ]; then
  ${IPT} -t filter -A OUTPUT -o ${PUB_IF} -p tcp -s ${SERVER_IP} --sport 8006 -m conntrack --ctstate ESTABLISHED     -j ACCEPT
 fi
 
-while [ "${DEDIBACKUP}" != "y" -a "${DEDIBACKUP}" != "Y" -a "${DEDIBACKUP}" != "n" -a "${DEDIBACKUP}" != "N" ]; do read -p "${YELLOW}Do you want to permit ftp save to dedibackup-dc3.online.net (y/N)?${NORMAL} " DEDIBACKUP; done
-if [ "${DEDIBACKUP}" == "y" -o "${DEDIBACKUP}" == "Y" ]; then
- LOADER
- echo "${GREEN}  - Allow dedibackup-dc3.online.net${RED}"
- ${IPT} -N DEDIBACKUP
- ${IPT} -t filter -A DEDIBACKUP -o ${PUB_IF} -p tcp -s ${SERVER_IP} -d dedibackup-dc3.online.net --dport 21 -m conntrack --ctstate NEW,ESTABLISHED -j ACCEPT
- ${IPT} -t filter -A DEDIBACKUP -i ${PUB_IF} -p tcp -s dedibackup-dc3.online.net -d ${SERVER_IP} --sport 21 -m conntrack --ctstate ESTABLISHED -j ACCEPT
- ${IPT} -t filter -I INPUT  5 -i ${PUB_IF} -p tcp -j DEDIBACKUP
- ${IPT} -t filter -I OUTPUT 5 -o ${PUB_IF} -p tcp -j DEDIBACKUP
-fi
 ${IPT} -I INPUT -m psd --psd-weight-threshold 15 --psd-hi-ports-weight 3 -j DROP
 
 
@@ -437,12 +427,12 @@ ${IPT} -I INPUT -m psd --psd-weight-threshold 15 --psd-hi-ports-weight 3 -j DROP
 ###############
 ## NAT RULES ##
 ###############
-if [ "$(sysctl net.ipv4.ip_forward | awk '{print $3}')" != "1" -o -z "$(cat /etc/sysctl.conf | grep "net.ipv4.ip_forward =")" ]; then
-  echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
-else
-  sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf
-fi
-sysctl -qp /etc/sysctl.conf
+# if [ "$(sysctl net.ipv4.ip_forward | awk '{print $3}')" != "1" -o -z "$(cat /etc/sysctl.conf | grep "net.ipv4.ip_forward =")" ]; then
+  # echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+# else
+  # sed -i 's/net.ipv4.ip_forward = 0/net.ipv4.ip_forward = 1/g' /etc/sysctl.conf
+# fi
+# sysctl -qp /etc/sysctl.conf
 
 #### INTER VM - OK ####
 # ${IPT} -A FORWARD -s 192.168.0.0/16 -d 192.168.0.0/16 -j ACCEPT
