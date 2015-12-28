@@ -101,7 +101,7 @@ cp /etc/apt/sources.list{,.sav`date +%d-%m-%y_%T`}
 # wheezy or jessie?
 [ -z ${DEB} ] && { DEBIAN_VERSION=$(cat /etc/debian_version | cut -d. -f1); if [ ${DEBIAN_VERSION} == 8 ]; then DEB=jessie; elif [ ${DEBIAN_VERSION} == 7 ]; then DEB=wheezy; else DEB=stable; fi; }
 # proxmox VE?
-[ -f /etc/apt/sources.list.d/pve-enterprise.list ] && { echo "deb http://download.proxmox.com/debian ${DEB} pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list; rm /etc/apt/sources.list.d/pve-enterprise.list; }
+[ $(uname -r | grep pve) ] && { echo "deb http://download.proxmox.com/debian ${DEB} pve-no-subscription" > /etc/apt/sources.list.d/pve-install-repo.list; rm /etc/apt/sources.list.d/pve-enterprise.list; }
 # New sources.list
 echo "# Official repository
 deb http://ftp.fr.debian.org/debian ${DEB} main contrib non-free
@@ -233,8 +233,6 @@ set tabstop=4' >> /etc/vim/vimrc
 update-alternatives --config editor > /dev/null << EOF
 2
 EOF
-#### VM ####
-[ $(uname -r | grep pve) ] && { sed -i 's/^IPTABLES=/OLDIPTABLES=/' /etc/vz/vz.conf; sed -i '/^OLDIPTABLES/i\IPTABLES="iptable_filter iptable_mangle ipt_limit ipt_multiport ipt_tos ipt_TOS ipt_REJECT ipt_TCPMSS ipt_tcpmss ipt_ttl ipt_LOG ipt_length ip_conntrack ip_conntrack_ftp ip_conntrack_irc ipt_conntrack ipt_state ipt_helper iptable_nat ip_nat_ftp ip_nat_irc ipt_REDIRECT xt_mac ipt_owner"' /etc/vz/vz.conf; sed -i '/^OLDIPTABLES=/d' /etc/vz/vz.conf; }
 
 
 
@@ -331,16 +329,9 @@ could be pursued.
 ------------------------------------------------------------" > /etc/issue.net
 echo "none /dev/shm tmpfs defaults,noexec,nosuid,nodev 0 0" >> /etc/fstab
 # Else
-[ -f /etc/apt/sources.list.d/pve-enterprise.list ] && { cp /usr/share/pve-manager/ext4/pvemanagerlib.js /usr/share/pve-manager/ext4/pvemanagerlib.js.sav; sed "s@data.status !== 'Active'@false@" /usr/share/pve-manager/ext4/pvemanagerlib.js; echo 'auto vmbr1
-iface vmbr1 inet static
-        address  192.168.0.1
-        netmask  255.255.255.0
-        bridge_ports none
-        bridge_stp off
-        bridge_fd 0
-' >> /etc/network/interfaces; }
 sleep 3s
 cd ${DIR}/files/
+[ $(uname -r | grep pve) ] && { echo -e "\n${GREEN}Done! \n Press [ENTER] to continue and configure proxmox, [CTRL +C] to leave"; read; chmod +x proxmox.bash; }
 [ "${FIREWALL}" == "y" -o "${FIREWALL}" == "Y" ] && { echo -e "\n${GREEN}Done! \n Press [ENTER] to continue and install a firewall, [CTRL +C] to leave"; read; chmod +x firewall.bash; ./firewall.bash ${SSH_PORT} ${PUB_IF}; }
 echo -e "\n${GREEN}Done!
 Press [ENTER] to continue and REBOOT"
